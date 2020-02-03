@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build !windows
+
 package span_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"golang.org/x/tools/internal/span"
@@ -16,36 +17,58 @@ import (
 // tests by using only forward slashes, assuming that the standard library
 // functions filepath.ToSlash and filepath.FromSlash do not need testing.
 func TestURI(t *testing.T) {
-	for _, test := range []string{
-		``,
-		`C:/Windows/System32`,
-		`C:/Go/src/bob.go`,
-		`c:/Go/src/bob.go`,
-		`/path/to/dir`,
-		`/a/b/c/src/bob.go`,
-		`c:/Go/src/bob george/george/george.go`,
+	for _, test := range []struct {
+		path, wantFile string
+		wantURI        span.URI
+	}{
+		{
+			path:     ``,
+			wantFile: ``,
+			wantURI:  span.URI(""),
+		},
+		{
+			path:     `C:/Windows/System32`,
+			wantFile: `C:/Windows/System32`,
+			wantURI:  span.URI("file:///C:/Windows/System32"),
+		},
+		{
+			path:     `C:/Go/src/bob.go`,
+			wantFile: `C:/Go/src/bob.go`,
+			wantURI:  span.URI("file:///C:/Go/src/bob.go"),
+		},
+		{
+			path:     `c:/Go/src/bob.go`,
+			wantFile: `C:/Go/src/bob.go`,
+			wantURI:  span.URI("file:///C:/Go/src/bob.go"),
+		},
+		{
+			path:     `/path/to/dir`,
+			wantFile: `/path/to/dir`,
+			wantURI:  span.URI("file:///path/to/dir"),
+		},
+		{
+			path:     `/a/b/c/src/bob.go`,
+			wantFile: `/a/b/c/src/bob.go`,
+			wantURI:  span.URI("file:///a/b/c/src/bob.go"),
+		},
+		{
+			path:     `c:/Go/src/bob george/george/george.go`,
+			wantFile: `C:/Go/src/bob george/george/george.go`,
+			wantURI:  span.URI("file:///C:/Go/src/bob george/george/george.go"),
+		},
+		{
+			path:     `file:///c:/Go/src/bob george/george/george.go`,
+			wantFile: `C:/Go/src/bob george/george/george.go`,
+			wantURI:  span.URI("file:///C:/Go/src/bob george/george/george.go"),
+		},
 	} {
-		testPath := filepath.FromSlash(test)
-		expectPath := testPath
-		if len(test) > 0 && test[0] == '/' {
-			if abs, err := filepath.Abs(expectPath); err == nil {
-				expectPath = abs
-			}
+		got := span.NewURI(test.path)
+		if got != test.wantURI {
+			t.Errorf("ToURI: got %s, expected %s", got, test.wantURI)
 		}
-		expectURI := filepath.ToSlash(expectPath)
-		if len(expectURI) > 0 {
-			if expectURI[0] != '/' {
-				expectURI = "/" + expectURI
-			}
-			expectURI = "file://" + expectURI
-		}
-		uri := span.FileURI(testPath)
-		if expectURI != string(uri) {
-			t.Errorf("ToURI: expected %s, got %s", expectURI, uri)
-		}
-		filename := uri.Filename()
-		if expectPath != filename {
-			t.Errorf("Filename: expected %s, got %s", expectPath, filename)
+		gotFilename := got.Filename()
+		if gotFilename != test.wantFile {
+			t.Errorf("Filename: got %s, expected %s", gotFilename, test.wantFile)
 		}
 	}
 }
