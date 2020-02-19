@@ -1,0 +1,6 @@
+Client->Proxy: Do something
+alt: [proxy is enable]
+    Proxy->Server: Forward request
+    Server->Proxy: The response
+end
+Proxy->Client: Response
