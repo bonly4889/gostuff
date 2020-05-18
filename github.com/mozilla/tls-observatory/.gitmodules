@@ -1,8 +1,0 @@
-[submodule "truststores"]
-	path = truststores
-	url = https://github.com/kirei/catt.git
-	branch = master
-[submodule "cipherscan"]
-	path = cipherscan
-	url = git://github.com/jvehent/cipherscan
-	branch = master

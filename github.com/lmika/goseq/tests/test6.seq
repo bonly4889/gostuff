@@ -1,3 +1,0 @@
-Client->Server: Request ...
-note over Server: Stuff needs to be\ndone here
-Server->Client: Response
